@@ -4,82 +4,108 @@ import sys
 import argparse
 from statistics import mean, median
 
-def interpret_spec(input):
-	first_string = input.replace('+', 'd')
-	if 'd' in first_string:
-		spec = first_string.split('d')
-		number = spec[0]
-		try:
-			sides = spec[1]
-			bonus = int(spec[2])
-		except:
-			sides = spec[1]
-			bonus = None
-			return(int(number), int(sides), bonus)
-	else:
-		print("Please check your die spec. Exiting.")
-		sys.exit(1)
 
-
-def roll(number, sides, exploding):
-	rolls = []
-
-	for x in range(number):
-		roll = randint(1, sides)
-		rolls.append(roll)
-		while exploding and roll == sides:
-			roll = randint(1, sides)
-			rolls.append(roll)
-
-	return rolls
-
-def tabulate_rolls(rolls, bonus):
-	print_rolls = ''
-	for i in range(len(rolls)):
-		if i != 0:
-			print_rolls = print_rolls + ', '
-		if int(rolls[i]) == max(rolls):
-			print_rolls = print_rolls + f'*{rolls[i]}*'
+class DiceGroup:
+	def __init__(self, die_spec, exploding):
+		die_spec = die_spec.replace('+', 'd')
+		if 'd' in die_spec:
+			split_spec = die_spec.split('d')
+			self.number = int(split_spec[0])
+			self.sides = int(split_spec[1])
 		else:
-			print_rolls = print_rolls + str(rolls[i])
-	total = sum(rolls)
-	return (print_rolls, total, bonus)
+			print("Please check your die spec. Exiting.")
+			sys.exit(1)
+		self.exploding = exploding
 
-def print_rolls(print_rolls, total, bonus):
-	if bonus is None:
-		bonus = 0
-	print(f'{print_rolls}\n{total} + {bonus} = {total + bonus}')
+
+	def roll(self):
+		rolls = []
+
+		for x in range(self.number):
+			roll = randint(1, self.sides)
+			rolls.append(roll)
+			while self.exploding and roll == self.sides:
+				roll = randint(1, self.sides)
+				rolls.append(roll)
+
+		self.rolls = rolls
+
+
+class DieRoll:
+	def __init__(self, specs, bonus, exploding, agon):
+		self.agon = agon
+		self.dice = []
+		for spec in specs:
+			self.dice.append(DiceGroup(spec, exploding))
+		for die in self.dice:
+			die.roll()
+
+		self.bonus = bonus
+
+		if not self.agon:
+			rolls = []
+			for die in self.dice:
+				rolls.extend(die.rolls)
+			self.total = sum(rolls)
+
+			self.formatted_rolls = ''
+			if len(rolls) == 1:
+				self.formatted_rolls = rolls[0]
+			else:
+				for i in range(len(rolls)):
+					if i != 0:
+						self.formatted_rolls = self.formatted_rolls + ', '
+					if int(rolls[i]) == max(rolls):
+						self.formatted_rolls = self.formatted_rolls + f'*{rolls[i]}*'
+					else:
+						self.formatted_rolls = self.formatted_rolls + str(rolls[i])
+		else:
+			self.working_dice = []
+			self.dfours = []
+			for die in self.dice:
+				if die.sides == 4:
+					self.dfours.extend(die.rolls)
+				else:
+					self.working_dice.extend(die.rolls)
+			self.working_dice = sorted(self.working_dice)
+			self.dfours = sorted(self.dfours)
+			self.printable_working = ', '.join([str(x) for x in self.working_dice])
+			if self.dfours:
+				self.printable_dfours = ', '.join([str(x) for x in self.dfours])
+			else:
+				self.printable_dfours = 'Not used.'
+
+
+	def print_rolls(self):
+		if not self.agon:
+			if self.bonus is None:
+				self.bonus = 0
+			print(f'{self.formatted_rolls}\n{self.total} + {self.bonus} = {self.total + self.bonus}')
+		else:
+			if self.bonus is None:
+				print("WARNING: No bonus given. Setting strife to 5.")
+				self.bonus = 5
+			if self.dfours:
+				print(f'\nWorking Dice: {self.printable_working} | Divine Favor: {self.printable_dfours} | Strife: {self.bonus}')
+				print(f'  HERO: {self.working_dice[-1]} + {self.working_dice[-2]} + {self.dfours[-1]} = {sum(self.working_dice[-2:], self.dfours[-1])}')
+			else:
+				print(f'\nWorking Dice: {self.printable_working} | Divine Favor: {self.printable_dfours} | Strife: {self.bonus}')
+				print(f'  HERO: {self.working_dice[-1]} + {self.working_dice[-2]} = {sum(self.working_dice[-2:])}')
+
+			print(f'STRIFE: {self.working_dice[-1]} + {self.bonus} = {self.working_dice[-1] + self.bonus}\n')
+
 
 def main():
 	args = parser.parse_args()
-	if args.pick_high:
-		keep = 'high'
-	elif args.pick_low:
-		keep = 'low'
-	else:
-		keep = None
 
-	if args.agon:
-		pass
-	else:
-		specs = []
-		for spec in args.die_spec:
-			specs.append(interpret_spec(spec))
-
-		rolls = []
-		for spec in specs:
-			rolls.extend(roll(spec[0], spec[1], args.exploding))
-		print_rolls(*tabulate_rolls(rolls, args.bonus))
+	die_roll = DieRoll(args.die_spec, args.bonus, args.exploding, args.agon)
+	die_roll.print_rolls()
 
 parser = argparse.ArgumentParser(description = 'Roll arbitrary dice')
 parser.add_argument('die_spec', help = 'Die specifications, as <n>d<s> where n is number and s is sides', nargs = '+')
-parser.add_argument('-b', '--bonus', help = 'Bonus to total roll.', type = int)
+parser.add_argument('-b', '--bonus', help = 'Bonus to total roll. If rolling for Agon, this is the strife level.', type = int)
 parser.add_argument('-e', '--exploding', help = 'Reroll and add dice which hit max value.', action = 'store_true')
-parser.add_argument('--agon', help = 'Roll dice as required for the Agon system.', action = 'store_true')
-
-picks = parser.add_mutually_exclusive_group(required = False)
-picks.add_argument('--pick-high', help = 'Take highest value, not total', action = 'store_true')
-picks.add_argument('--pick-low', help = 'Take lowest value, not total', action = 'store_true')
+parser.add_argument('-a', '--agon', help = 'Roll dice as required for the Agon system.', action = 'store_true')
 
 if __name__ == '__main__':
 	main()
