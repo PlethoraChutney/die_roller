@@ -11,13 +11,13 @@ class DiceGroup:
 			split_spec = die_spec.split('d')
 			self.number = int(split_spec[0])
 			self.sides = int(split_spec[1])
+			assert self.sides > 0
+		except AssertionError:
+			print('Dice must all be Euclidian')
+			sys.exit(1)
 		except:
 			print("Please check your die spec.")
 			sys.exit(1)
-
-		if self.sides <= 0:
-			print('In his house at R\'lyeh dead Cthulhu waits dreaming.\n(Negative dice sides)')
-			sys.exit(2)
 		self.exploding = exploding
 
 
