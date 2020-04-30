@@ -33,7 +33,7 @@ def roll(number, sides, exploding):
 
 	return rolls
 
-def print_rolls(rolls):
+def tabulate_rolls(rolls, bonus):
 	print_rolls = ''
 	for i in range(len(rolls)):
 		if i != 0:
@@ -43,7 +43,12 @@ def print_rolls(rolls):
 		else:
 			print_rolls = print_rolls + str(rolls[i])
 	total = sum(rolls)
-	return (print_rolls, total)
+	return (print_rolls, total, bonus)
+
+def print_rolls(print_rolls, total, bonus):
+	if bonus is None:
+		bonus = 0
+	print(f'{print_rolls}\n{total} + {bonus} = {total + bonus}')
 
 def main():
 	args = parser.parse_args()
@@ -63,12 +68,12 @@ def main():
 
 		rolls = []
 		for spec in specs:
-			results = roll(spec[0], spec[1], spec[2], args.exploding, keep = keep)
-			print(print_rolls(results[0]))
-			print(f'Total: {results[1]}')
+			rolls.extend(roll(spec[0], spec[1], args.exploding))
+		print_rolls(*tabulate_rolls(rolls, args.bonus))
 
 parser = argparse.ArgumentParser(description = 'Roll arbitrary dice')
 parser.add_argument('die_spec', help = 'Die specifications, as <n>d<s> where n is number and s is sides', nargs = '+')
+parser.add_argument('-b', '--bonus', help = 'Bonus to total roll.', type = int)
 parser.add_argument('-e', '--exploding', help = 'Reroll and add dice which hit max value.', action = 'store_true')
 parser.add_argument('--agon', help = 'Roll dice as required for the Agon system.', action = 'store_true')
 
