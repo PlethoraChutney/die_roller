@@ -7,13 +7,12 @@ from statistics import mean, median
 
 class DiceGroup:
 	def __init__(self, die_spec, exploding):
-		die_spec = die_spec.replace('+', 'd')
-		if 'd' in die_spec:
+		try:
 			split_spec = die_spec.split('d')
 			self.number = int(split_spec[0])
 			self.sides = int(split_spec[1])
-		else:
-			print("Please check your die spec. Exiting.")
+		except:
+			print("Please check your die spec.")
 			sys.exit(1)
 		self.exploding = exploding
 
@@ -42,7 +41,23 @@ class DieRoll:
 
 		self.bonus = bonus
 
-		if not self.agon:
+		if self.agon:
+			self.working_dice = []
+			self.dfours = []
+			for die in self.dice:
+				if die.sides == 4:
+					self.dfours.extend(die.rolls)
+				else:
+					self.working_dice.extend(die.rolls)
+			self.working_dice = sorted(self.working_dice)
+			self.dfours = sorted(self.dfours)
+
+			self.printable_working = ', '.join([str(x) for x in self.working_dice])
+			if self.dfours:
+				self.printable_dfours = ', '.join([str(x) for x in self.dfours])
+			else:
+				self.printable_dfours = 'Not used.'
+		else:
 			rolls = []
 			for die in self.dice:
 				rolls.extend(die.rolls)
@@ -59,29 +74,9 @@ class DieRoll:
 						self.formatted_rolls = self.formatted_rolls + f'*{rolls[i]}*'
 					else:
 						self.formatted_rolls = self.formatted_rolls + str(rolls[i])
-		else:
-			self.working_dice = []
-			self.dfours = []
-			for die in self.dice:
-				if die.sides == 4:
-					self.dfours.extend(die.rolls)
-				else:
-					self.working_dice.extend(die.rolls)
-			self.working_dice = sorted(self.working_dice)
-			self.dfours = sorted(self.dfours)
-			self.printable_working = ', '.join([str(x) for x in self.working_dice])
-			if self.dfours:
-				self.printable_dfours = ', '.join([str(x) for x in self.dfours])
-			else:
-				self.printable_dfours = 'Not used.'
-
 
 	def print_rolls(self):
-		if not self.agon:
-			if self.bonus is None:
-				self.bonus = 0
-			print(f'{self.formatted_rolls}\n{self.total} + {self.bonus} = {self.total + self.bonus}')
-		else:
+		if self.agon:
 			if self.bonus is None:
 				print("WARNING: No bonus given. Setting strife to 5.")
 				self.bonus = 5
@@ -93,6 +88,10 @@ class DieRoll:
 				print(f'  HERO: {self.working_dice[-1]} + {self.working_dice[-2]} = {sum(self.working_dice[-2:])}')
 
 			print(f'STRIFE: {self.working_dice[-1]} + {self.bonus} = {self.working_dice[-1] + self.bonus}\n')
+		else:
+			if self.bonus is None:
+				self.bonus = 0
+			print(f'{self.formatted_rolls}\n{self.total} + {self.bonus} = {self.total + self.bonus}')
 
 
 def main():
@@ -102,10 +101,18 @@ def main():
 	die_roll.print_rolls()
 
 parser = argparse.ArgumentParser(description = 'Roll arbitrary dice')
-parser.add_argument('die_spec', help = 'Die specifications, as <n>d<s> where n is number and s is sides', nargs = '+')
-parser.add_argument('-b', '--bonus', help = 'Bonus to total roll. If rolling for Agon, this is the strife level.', type = int)
-parser.add_argument('-e', '--exploding', help = 'Reroll and add dice which hit max value.', action = 'store_true')
-parser.add_argument('-a', '--agon', help = 'Roll dice as required for the Agon system.', action = 'store_true')
+parser.add_argument('die_spec',
+					help = 'Die specifications, as <n>d<s> (e.g., 1d6)',
+					nargs = '+')
+parser.add_argument('-b', '--bonus',
+					help = 'Bonus to total roll. If rolling for Agon, this is the strife level.',
+					type = int)
+parser.add_argument('-e', '--exploding',
+					help = 'Reroll and add dice which hit max value.',
+					action = 'store_true')
+parser.add_argument('-a', '--agon',
+					help = 'Roll dice as required for the Agon system.',
+					action = 'store_true')
 
 if __name__ == '__main__':
 	main()
