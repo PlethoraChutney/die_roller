@@ -16,7 +16,7 @@ class DiceGroup:
 			sys.exit(1)
 
 		if self.sides <= 0:
-			print('In his house at R\'lyeh dead Cthulhu waits dreaming.')
+			print('In his house at R\'lyeh dead Cthulhu waits dreaming.\n(Negative dice sides)')
 			sys.exit(2)
 		self.exploding = exploding
 
