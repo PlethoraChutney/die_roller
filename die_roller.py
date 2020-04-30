@@ -2,11 +2,11 @@
 from random import randint
 import sys
 import argparse
-from statistics import mean, median
+from math import cos
 
 
 class DiceGroup:
-	def __init__(self, die_spec, exploding):
+	def __init__(self, die_spec, exploding = False):
 		try:
 			split_spec = die_spec.split('d')
 			self.number = int(split_spec[0])
@@ -35,7 +35,7 @@ class DiceGroup:
 
 
 class DieRoll:
-	def __init__(self, specs, bonus, exploding, agon):
+	def __init__(self, specs, bonus = None, exploding = None, agon = False):
 		self.agon = agon
 		self.dice = []
 		for spec in specs:
@@ -101,6 +101,19 @@ class DieRoll:
 def main():
 	args = parser.parse_args()
 
+	if args.complex:
+		try:
+			magnitude = DiceGroup(args.die_spec[0])
+			angle = DiceGroup(args.die_spec[1])
+			magnitude.roll()
+			angle.roll()
+			print(f'Your value: {sum(magnitude.rolls) * cos(sum(angle.rolls) / angle.sides)}')
+		except:
+			print('This is already dumb as hell, I\'m not adding any debugging.')
+			sys.exit(2)
+		finally:
+			sys.exit(0)
+
 	die_roll = DieRoll(args.die_spec, args.bonus, args.exploding, args.agon)
 	die_roll.print_rolls()
 
@@ -116,6 +129,9 @@ parser.add_argument('-e', '--exploding',
 					action = 'store_true')
 parser.add_argument('-a', '--agon',
 					help = 'Roll dice as required for the Agon system.',
+					action = 'store_true')
+parser.add_argument('-i', '--complex',
+					help = 'A dumb idea. Roll two groups of dice, first the magnitude and the second the angle (radians, as fraction of sum / sides on dice). Return real component.',
 					action = 'store_true')
 
 if __name__ == '__main__':
