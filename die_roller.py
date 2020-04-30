@@ -14,6 +14,10 @@ class DiceGroup:
 		except:
 			print("Please check your die spec.")
 			sys.exit(1)
+
+		if self.sides <= 0:
+			print('In his house at R\'lyeh dead Cthulhu waits dreaming.')
+			sys.exit(2)
 		self.exploding = exploding
 
 
